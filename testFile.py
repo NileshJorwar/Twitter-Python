@@ -40,8 +40,9 @@ class TwitterClient(object):
         Utility function to clean tweet text by removing links, special characters
         using simple regex statements.
         '''
-        return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet).split())
- 
+        #return ' '.join(re.sub("(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", " ", tweet).split())
+        return ' '.join(re.sub("#(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)"," ",tweet).split())
+        #return ' '.join(re.sub("https?:.*(@[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)", "URL", tweet).split())
     def get_tweet_sentiment(self, tweet):
         '''
         Utility function to classify sentiment of passed tweet
@@ -111,6 +112,27 @@ class TwitterClient(object):
         
         for p in range(len(categories)):
             self.writeCategory(categories[p],tweets)
+    
+    def categorizeTweets(self,tweets):
+        categorizedTweets=[]
+        with open('OutputSentiments.csv', 'a',newline='',encoding="utf-8") as outFile:
+            writer = csv.writer(outFile)
+            with open('keyWordsList.json', 'r') as keyWordsFile:
+                for line in keyWordsFile:
+                    keyWords=json.loads(line)
+                    for category in keyWords:
+                        for categ,categValues in category.items():
+                            writer.writerow([categ, "Sentiments"])
+                            for keyWord in categValues:
+                                for tweet in tweets:
+                                    if keyWord in tweet:
+                                        categorizedTweets.append(tweet)
+                                        writeCSVTwitterData=[]
+                                        writeCSVTwitterData.append(self.clean_tweet(tweet))                        
+                                        writeCSVTwitterData.append(self.get_tweet_sentiment(tweet))
+                                        writer.writerow(writeCSVTwitterData)                                                                
+                                                            
+            
     def categorizeTweetsKeywords(self,tweets):
         categorizedTweets=[]
         with open('keyWordsList.json', 'r') as keyWordsFile:                
@@ -123,7 +145,7 @@ class TwitterClient(object):
                                            if keyWord in tweet:
                                                categorizedTweets.append(tweet)
                                        
-        print(categorizedTweets)                           
+        #print(categorizedTweets)                           
         try:
             with open('tweetSentiments.csv', 'a',newline='',encoding="utf-8") as myFile:
                 writer = csv.writer(myFile)
@@ -131,7 +153,7 @@ class TwitterClient(object):
                 for tweet in categorizedTweets:
                     parsed_tweet = {}
                     writeCSVTwitterData=[]
-                    parsed_tweet['text'] = tweet
+                    parsed_tweet['text'] = self.clean_tweet(tweet)
                     writeCSVTwitterData.append(parsed_tweet['text'])                        
                     parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)
                     writeCSVTwitterData.append(parsed_tweet['sentiment'])
@@ -149,7 +171,7 @@ class TwitterClient(object):
         tweets = []
         retweets=[]
         try:
-            with open('tweets.json', 'r') as f:                
+            with open('tweetsNewAgain.json', 'r') as f:                
                 for line in f:
                     if len(line) > 1:                                
                         tweetLine = json.loads(line)      
@@ -165,7 +187,8 @@ class TwitterClient(object):
                                 tweets.append(tweetText['text'])                     
                     else:
                         break
-                self.categorizeTweetsKeywords(tweets)                    
+                self.categorizeTweetsKeywords(tweets)
+                self.categorizeTweets(tweets)                                    
                 #self.genCategories(tweets)
                 return tweets
         except tweepy.TweepError as e:
