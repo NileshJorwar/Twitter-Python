@@ -10,6 +10,7 @@ import tweepy
 from tweepy import OAuthHandler
 from textblob import TextBlob
 import json 
+import pandas as pd
 class TwitterClient(object):
     '''
     Generic Twitter Class for sentiment analysis.
@@ -127,6 +128,7 @@ class TwitterClient(object):
                                 for tweet in tweets:
                                     if keyWord in tweet:
                                         categorizedTweets.append(tweet)
+                                        
                                         writeCSVTwitterData=[]
                                         writeCSVTwitterData.append(self.clean_tweet(tweet))                        
                                         writeCSVTwitterData.append(self.get_tweet_sentiment(tweet))
@@ -135,6 +137,18 @@ class TwitterClient(object):
             
     def categorizeTweetsKeywords(self,tweets):
         categorizedTweets=[]
+        environmentTweets=[]
+        environmentSentiments=[]
+        communityTweets=[]
+        communitySentiments=[]
+        human_capitalTweets=[]
+        human_capitalSentiments=[]
+        diversityTweets=[]
+        diversitySentiments=[]
+        productTweets=[]
+        productSentiments=[]
+        governanceTweets=[]
+        governanceSentiments=[]
         with open('keyWordsList.json', 'r') as keyWordsFile:                
                        for line in keyWordsFile:
                            keyWords=json.loads(line)
@@ -143,8 +157,40 @@ class TwitterClient(object):
                                    for keyWord in categValues:
                                        for tweet in tweets:
                                            if keyWord in tweet:
-                                               categorizedTweets.append(tweet)
-                                       
+                                               categorizedTweets.append(self.clean_tweet(tweet))                                               
+                                               if categ =='Environment':                                                   
+                                                   environmentTweets.append(self.clean_tweet(tweet))
+                                                   environmentSentiments.append(self.get_tweet_sentiment(tweet))
+                                               elif categ =='Community':
+                                                   communityTweets.append(self.clean_tweet(tweet))
+                                                   communitySentiments.append(self.get_tweet_sentiment(tweet))
+                                               elif categ =='Human capital':
+                                                   human_capitalTweets.append(self.clean_tweet(tweet))
+                                                   human_capitalSentiments.append(self.get_tweet_sentiment(tweet))
+                                               elif categ =='Diversity':
+                                                   diversityTweets.append(self.clean_tweet(tweet))
+                                                   diversitySentiments.append(self.get_tweet_sentiment(tweet))
+                                               elif categ =='Product':
+                                                   productTweets.append(self.clean_tweet(tweet))
+                                                   productSentiments.append(self.get_tweet_sentiment(tweet))
+                                               elif categ =='Governance':
+                                                   governanceTweets.append(self.clean_tweet(tweet))
+                                                   governanceSentiments.append(self.get_tweet_sentiment(tweet))
+        
+        df1 = pd.DataFrame({'Environmental Tweets': environmentTweets,'Sentiments': environmentSentiments})
+        df2 = pd.DataFrame({'Community Tweets': communityTweets,'Sentiments': communitySentiments})
+        df3 = pd.DataFrame({'Human Capital Tweets': human_capitalTweets,'Sentiments': human_capitalSentiments})
+        df4 = pd.DataFrame({'Diversity Tweets': diversityTweets,'Sentiments': diversitySentiments})
+        df5 = pd.DataFrame({'Product Tweets': productTweets,'Sentiments': productSentiments})
+        df6 = pd.DataFrame({'Governance Tweets': governanceTweets,'Sentiments': governanceSentiments})
+        writer = pd.ExcelWriter('Categorized_Tweets.xlsx', engine='xlsxwriter')
+        df1.to_excel(writer, sheet_name='Environment')
+        df2.to_excel(writer, sheet_name='Community')
+        df3.to_excel(writer, sheet_name='Human Capital')
+        df4.to_excel(writer, sheet_name='Diversity')
+        df5.to_excel(writer, sheet_name='Product')
+        df6.to_excel(writer, sheet_name='Governance')
+        writer.save()        
         #print(categorizedTweets)                           
         try:
             with open('tweetSentiments.csv', 'a',newline='',encoding="utf-8") as myFile:
@@ -158,7 +204,7 @@ class TwitterClient(object):
                     parsed_tweet['sentiment'] = self.get_tweet_sentiment(tweet)
                     writeCSVTwitterData.append(parsed_tweet['sentiment'])
                     writer.writerow(writeCSVTwitterData)                                                                
-                    
+            
         except tweepy.TweepError as e:
             # print error (if any)
             print("Error : " + str(e))
@@ -188,7 +234,7 @@ class TwitterClient(object):
                     else:
                         break
                 self.categorizeTweetsKeywords(tweets)
-                self.categorizeTweets(tweets)                                    
+                #self.categorizeTweets(tweets)                                    
                 #self.genCategories(tweets)
                 return tweets
         except tweepy.TweepError as e:
